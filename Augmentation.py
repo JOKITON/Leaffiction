@@ -64,12 +64,12 @@ def	img_distort(img_path, img, distortion_rate):
 	img_path = str.replace(img_path, '.JPG', '_Distortion.JPG')
 	cv.imwrite(img_path, img_dist)
 
-def	data_augmentation_folder():
+def	img_augmentation_folder():
 	folder_path = sys.argv[1]
 	files, dirs = get_files(folder_path)
 
 	for file, dir in zip(files, dirs):
-		for img in file:
+		for it, img in enumerate(file):
 			img_path = folder_path + '/' + dir + '/' + img
 			# Check if its the original image
 			if str.find(img_path, ').JPG') == -1:
@@ -80,20 +80,22 @@ def	data_augmentation_folder():
 				print(f"Error: Could not load image {img_path}")
 				continue
 			# Data augmentation
-			elif dir == 'Apple_rust':
-				img_flip(img_path)
-				img_rotate(img_path, cv.ROTATE_90_CLOCKWISE)
-				img_skew(img_path, 0.3, direction='x')
-				img_shear(img_path, 0.3, direction='y')
-				img_crop(img_path, 0.1)
-				img_distort(img_path, 1)
+			elif dir == 'Apple_rust' and it % 1 == 0:
+				number = np.random.rand() * 6
+				if number < 1:
+					img_flip(img_path, img)
+				elif number < 2:
+					img_rotate(img_path, img, cv.ROTATE_90_CLOCKWISE)
+				elif number < 3:
+					img_skew(img_path, img, 0.3, direction='x')
+				elif number < 4:
+					img_shear(img_path, img, 0.3, direction='y')
+				elif number < 5:
+					img_crop(img_path, img, 0.1)
+				else:
+					img_distort(img_path, img, 1)
 
-def	data_augmentation_img():
-	img_path = sys.argv[1]
-	if img_path is None:
-		print(f"Error: Could not find image {img_path}")
-		return
-
+def	img_augmentation(img_path):
 	if str.find(img_path, ').JPG') == -1:
 		print(f"Error: Image needs to be the original one: {img_path}")
 		return
@@ -111,6 +113,10 @@ def	data_augmentation_img():
 	img_distort(img_path, img, 1)
 
 def main():
-	data_augmentation_img()
+	img_path = sys.argv[1]
+	if img_path is None:
+		print(f"Error: Could not find image {img_path}")
+		return
+	img_augmentation(img_path)
 
 main()
