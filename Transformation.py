@@ -1,13 +1,16 @@
 import sys
+import os
 import cv2 as cv
 from plantcv import plantcv as pcv
 import matplotlib.pyplot as plt
 import numpy as np
+from utils.data import get_files, save_img
 
 WHITE_RGB = [255, 255, 255]
 GREEN_RGB = [0, 255, 100]
 LOWER_GREEN_HSV = [25, 40, 40]
 HIGHER_GREEN_HSV = [100, 255, 160]
+MAX_TRANSFORM = 50
 
 def	apply_gaus(img, width):
 	for X, y in img:
@@ -23,7 +26,7 @@ def	enchance_img(img):
 
 	return enhanced_img
 
-def	gaussian_blur(img):
+def	gaussian_blur(img, plt=True, path_to_save=None):
 
 	# Convert to HSV system
 	hsv_img = cv.cvtColor(img, cv.COLOR_BGR2HSV)
@@ -39,27 +42,37 @@ def	gaussian_blur(img):
 		gray_img=s_gblur, threshold=75, object_type="dark"
 	)
 
-	pcv.plot_image(s_thresh)
+	# Plot the masked image
+	if plt is True:
+		pcv.plot_image(s_thresh)
+	# Save the image
+	if path_to_save is not None:
+		path_to_save = str.replace(path_to_save, '.JPG', '_GaussianBlur.JPG')
+		cv.imwrite(path_to_save, s_thresh)
 
-def apply_mask(img):
-	# Convert to HSV system
+	return s_thresh
+
+def apply_mask(img, plt=True, path_to_save=None):
+
 	hsv_img = cv.cvtColor(img, cv.COLOR_BGR2HSV)
 
-	# Threshold the hue to isolate green/brown values
 	lower_green = np.array(LOWER_GREEN_HSV)
 	upper_green = np.array(HIGHER_GREEN_HSV)
 	mask = cv.inRange(hsv_img, lower_green, upper_green)
 
 	img_mask = pcv.apply_mask(img=img, mask=mask, mask_color='white')
 
-	# Plot the masked image
-	pcv.plot_image(img_mask)
+	if plt is True:
+		pcv.plot_image(img_mask)
+	if path_to_save is not None:
+		path_to_save = str.replace(path_to_save, '.JPG', '_Masked.JPG')
+		cv.imwrite(path_to_save, img_mask)
 
-def	roi_obj(img):
-	# Convert to HSV system
+	return img_mask
+
+def	roi_obj(img, plt=True, path_to_save=None):
 	hsv_img = cv.cvtColor(img, cv.COLOR_BGR2HSV)
 
-	# Threshold the hue to isolate green/brown values
 	lower_green = np.array(LOWER_GREEN_HSV)
 	upper_green = np.array(HIGHER_GREEN_HSV)
 	mask = cv.inRange(hsv_img, lower_green, upper_green)
@@ -91,9 +104,15 @@ def	roi_obj(img):
 	# **Draw the ROI rectangle on the image**
 	cv.rectangle(highlighted_img, (start_Y, start_X), (start_Y + width, start_X + height), (0, 0, 255), 2)
 
-	pcv.plot_image(highlighted_img)
+	if plt is True:
+		pcv.plot_image(highlighted_img)
+	if path_to_save is not None:
+		path_to_save = str.replace(path_to_save, '.JPG', '_RoiObj.JPG')
+		cv.imwrite(path_to_save, highlighted_img)
 
-def analize_img(img, plot=True):
+	return highlighted_img
+
+def analize_img(img, plt=True, path_to_save=None):
 	# Convert to HSV system
 	hsv_img = cv.cvtColor(img, cv.COLOR_BGR2HSV)
 
@@ -104,12 +123,15 @@ def analize_img(img, plot=True):
 
 	analysis_image = pcv.analyze.size(img=img, labeled_mask=mask)
 
-	if plot is True:
+	if plt is True:
 		pcv.plot_image(analysis_image)
+	if path_to_save is not None:
+		path_to_save = str.replace(path_to_save, '.JPG', '_AnalysisObj.JPG')
+		cv.imwrite(path_to_save, analysis_image)
 
 	return analysis_image
 
-def	pseudo_img(img):
+def	pseudo_img(img, plt=True, path_to_save=None):
 	# Convert to HSV system
 	hsv_img = cv.cvtColor(img, cv.COLOR_BGR2HSV)
 
@@ -118,10 +140,12 @@ def	pseudo_img(img):
 	upper_green = np.array(HIGHER_GREEN_HSV)
 	mask = cv.inRange(hsv_img, lower_green, upper_green)
 
-	pcv.plot_image(mask)
-
-	# Find the contours of the leaf
-	homolog_pts, start_pts, stop_pts, ptvals, chain, max_dist = pcv.homology.acute(img=img, mask=mask, win=40, threshold=110)
+	try:
+		# Find the contours of the leaf
+		homolog_pts, start_pts, stop_pts, ptvals, chain, max_dist = pcv.homology.acute(img=img, mask=mask, win=40, threshold=110)
+	except:
+		print("error: could not calculature the pseudo-marks. Skipping...")
+		return hsv_img
 
 	homolog_pts = sorted(homolog_pts, key=lambda pt: pt[0][0])  # Sort by X
 	start_pts = sorted(start_pts, key=lambda pt: pt[0][0])
@@ -137,29 +161,75 @@ def	pseudo_img(img):
 	for pt in stop_pts:
 		cv.circle(result_img, tuple(pt[0]), 5, (0, 255, 0), -1)  # Green (End)
 
-	pcv.plot_image(result_img)
+	if plt is True:
+		pcv.plot_image(result_img)
+	if path_to_save is not None:
+		path_to_save = str.replace(path_to_save, '.JPG', '_PseudoMarks.JPG')
+		cv.imwrite(path_to_save, result_img)
 
-def main():
-	img_path = sys.argv[1]
-	if img_path is None:
-		print(f"Error: Could not find image {img_path}")
+	return result_img
+
+def	handle_img(path_img, path_to_save=None, plt=True):
+	if check_img(path_img) is False:
+		print(f"Error: The given argument is not an image: {path_img}")
+		return
+	if str.find(path_img, ').JPG') == -1:
+		print(f"Error: Image needs to be the original one: {path_img}")
 		return
 
-	if str.find(img_path, ').JPG') == -1:
-		print(f"Error: Image needs to be the original one: {img_path}")
-		return
-
-	img = cv.imread(img_path)
+	img = cv.imread(path_img)
 	if img is None:
-		print(f"Error: Could not load image {img_path}")
+		print(f"Error: Could not load image {path_img}")
 		return
 
 	img = enchance_img(img)
-	pcv.plot_image(img)
-	gaussian_blur(img)
-	apply_mask(img)
-	roi_obj(img)
-	analize_img(img)
-	pseudo_img(img)
+	if plt is True:
+		pcv.plot_image(img, plt)
+
+	gaussian_blur(img, plt, path_to_save)
+	apply_mask(img, plt, path_to_save)
+	roi_obj(img, plt, path_to_save)
+	analize_img(img, plt, path_to_save)
+	pseudo_img(img, plt, path_to_save)
+	if path_to_save is not None:
+		print(path_to_save, "has been correctly transformed...")
+
+def	check_img(img):
+	valid_extensions = ('.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.gif')
+	return img.lower().endswith(valid_extensions)
+
+def	check_dir(dir):
+	if not os.path.isdir(dir):
+		raise ValueError(f"Error: The given directory is not valid: {dir}")
+	if dir[-1] != '/':
+		dir += '/'
+	return dir
+
+def	handle_dir(src_dir, out_dir):
+	src_dir = check_dir(src_dir)
+	out_dir = check_dir(out_dir)
+
+	files, subdirs = get_files(src_dir, skip_current=False)
+	if len(subdirs) > 0:
+		raise(ValueError("error: The given source directory does not contain any images:", src_dir))
+	for file in files:
+		for it, img in enumerate(file):
+			if it == MAX_TRANSFORM:
+				print("Alert: The maximum number of transformations have been reached...")
+				return
+			img_path = src_dir + img
+			# Check if its the original image
+			if str.find(img_path, ').JPG') == -1:
+				continue
+			# Check if img is valid
+			handle_img(img_path, path_to_save=out_dir + img, plt=False)
+
+def main():
+
+	if len(sys.argv) == 2:
+		handle_img(sys.argv[1], plt=True)
+	elif len(sys.argv) == 3:
+		handle_dir(sys.argv[1], sys.argv[2])
+
 
 main()

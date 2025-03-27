@@ -64,8 +64,7 @@ def	img_distort(img_path, img, distortion_rate):
 	img_path = str.replace(img_path, '.JPG', '_Distortion.JPG')
 	cv.imwrite(img_path, img_dist)
 
-def	img_augmentation_folder():
-	folder_path = sys.argv[1]
+def	img_augmentation_folder(folder_path):
 	files, dirs = get_files(folder_path)
 
 	for file, dir in zip(files, dirs):
