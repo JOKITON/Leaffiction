@@ -4,8 +4,10 @@ from plantcv import plantcv as pcv
 import matplotlib.pyplot as plt
 import numpy as np
 
-WHITE = [255, 255, 255]
+WHITE_RGB = [255, 255, 255]
 GREEN_RGB = [0, 255, 100]
+LOWER_GREEN_HSV = [25, 40, 40]
+HIGHER_GREEN_HSV = [100, 255, 160]
 
 def	apply_gaus(img, width):
 	for X, y in img:
@@ -23,13 +25,15 @@ def	enchance_img(img):
 
 def	gaussian_blur(img):
 
-	# Convert using the Saturation channel
-	gray_img = pcv.rgb2gray_hsv(rgb_img=img, channel='h')
+	# Convert to HSV system
+	hsv_img = cv.cvtColor(img, cv.COLOR_BGR2HSV)
 
 	# Threshold the hue to isolate green/brown values
-	gray_img = cv.inRange(gray_img, 25, 90)
+	lower_green = np.array(LOWER_GREEN_HSV)
+	upper_green = np.array(HIGHER_GREEN_HSV)
+	mask = cv.inRange(hsv_img, lower_green, upper_green)
 
-	s_gblur = pcv.gaussian_blur(img=gray_img, ksize=(3, 3),
+	s_gblur = pcv.gaussian_blur(img=mask, ksize=(3, 3),
 								sigma_x=0, sigma_y=None)
 	s_thresh = pcv.threshold.binary(
 		gray_img=s_gblur, threshold=75, object_type="dark"
@@ -38,14 +42,13 @@ def	gaussian_blur(img):
 	pcv.plot_image(s_thresh)
 
 def apply_mask(img):
-	# Convert using the Saturation channel
-	gray_img = pcv.rgb2gray_hsv(rgb_img=img, channel='h')
+	# Convert to HSV system
+	hsv_img = cv.cvtColor(img, cv.COLOR_BGR2HSV)
 
 	# Threshold the hue to isolate green/brown values
-	hsv_img = cv.inRange(gray_img, 25, 90)
-
-	# Threshold the saturation to isolate the leaf
-	mask = cv.threshold(hsv_img, 60, 255, cv.THRESH_BINARY)[1]
+	lower_green = np.array(LOWER_GREEN_HSV)
+	upper_green = np.array(HIGHER_GREEN_HSV)
+	mask = cv.inRange(hsv_img, lower_green, upper_green)
 
 	img_mask = pcv.apply_mask(img=img, mask=mask, mask_color='white')
 
@@ -53,13 +56,17 @@ def apply_mask(img):
 	pcv.plot_image(img_mask)
 
 def	roi_obj(img):
-	gray_img = pcv.rgb2gray_hsv(rgb_img=img, channel='h')
+	# Convert to HSV system
+	hsv_img = cv.cvtColor(img, cv.COLOR_BGR2HSV)
 
-	hsv_img = cv.inRange(gray_img, 25, 90)
+	# Threshold the hue to isolate green/brown values
+	lower_green = np.array(LOWER_GREEN_HSV)
+	upper_green = np.array(HIGHER_GREEN_HSV)
+	mask = cv.inRange(hsv_img, lower_green, upper_green)
 
-	roi = pcv.roi.rectangle(img=hsv_img, x=25, y=25, h=225, w=200)
+	roi = pcv.roi.rectangle(img=mask, x=25, y=25, h=225, w=200)
 
-	filtered_mask = pcv.roi.filter(mask=hsv_img, roi=roi, roi_type='partial')
+	filtered_mask = pcv.roi.filter(mask=mask, roi=roi, roi_type='partial')
 
 	# Convert original image to a copy where the leaf will be highlighted
 	highlighted_img = img.copy()
@@ -86,6 +93,52 @@ def	roi_obj(img):
 
 	pcv.plot_image(highlighted_img)
 
+def analize_img(img, plot=True):
+	# Convert to HSV system
+	hsv_img = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+
+	# Threshold the hue to isolate green/brown values
+	lower_green = np.array(LOWER_GREEN_HSV)
+	upper_green = np.array(HIGHER_GREEN_HSV)
+	mask = cv.inRange(hsv_img, lower_green, upper_green)
+
+	analysis_image = pcv.analyze.size(img=img, labeled_mask=mask)
+
+	if plot is True:
+		pcv.plot_image(analysis_image)
+
+	return analysis_image
+
+def	pseudo_img(img):
+	# Convert to HSV system
+	hsv_img = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+
+	# Threshold the hue to isolate green/brown values
+	lower_green = np.array(LOWER_GREEN_HSV)
+	upper_green = np.array(HIGHER_GREEN_HSV)
+	mask = cv.inRange(hsv_img, lower_green, upper_green)
+
+	pcv.plot_image(mask)
+
+	# Find the contours of the leaf
+	homolog_pts, start_pts, stop_pts, ptvals, chain, max_dist = pcv.homology.acute(img=img, mask=mask, win=40, threshold=110)
+
+	homolog_pts = sorted(homolog_pts, key=lambda pt: pt[0][0])  # Sort by X
+	start_pts = sorted(start_pts, key=lambda pt: pt[0][0])
+	stop_pts = sorted(stop_pts, key=lambda pt: pt[0][0])
+
+	result_img = img.copy()
+	for pt in homolog_pts:
+		cv.circle(result_img, tuple(pt[0]), 5, (0, 0, 255), -1)  # Red points
+
+	for pt in start_pts:
+		cv.circle(result_img, tuple(pt[0]), 5, (255, 0, 0), -1)  # Blue (Start)
+
+	for pt in stop_pts:
+		cv.circle(result_img, tuple(pt[0]), 5, (0, 255, 0), -1)  # Green (End)
+
+	pcv.plot_image(result_img)
+
 def main():
 	img_path = sys.argv[1]
 	if img_path is None:
@@ -101,9 +154,12 @@ def main():
 		print(f"Error: Could not load image {img_path}")
 		return
 
+	img = enchance_img(img)
 	pcv.plot_image(img)
 	gaussian_blur(img)
 	apply_mask(img)
 	roi_obj(img)
+	analize_img(img)
+	pseudo_img(img)
 
 main()
