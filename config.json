@@ -1,0 +1,19 @@
+{
+	"data_path": "data/",
+	"apple_path": "data/Apple/",
+	"grape_path": "data/Grape/",
+
+	"aug_apple_rust": 5,
+	"aug_apple_Black_rot": 1,
+	"aug_apple_scab": 1,
+	"aug_apple_healthy": 0,
+
+	"aug_grape_Black_rot": 0,
+	"aug_grape_Esca": 0,
+	"aug_grape_healthy": 3,
+	"aug_grape_spot": 0,
+
+	"train_path": "temp/",
+	"zip_src": "data/train",
+	"zip_out": "temp/"
+}
