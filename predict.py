@@ -5,7 +5,7 @@ import cv2 as cv
 from plantcv import plantcv as pcv
 from utils.data import get_files, get_img_path, conv_class
 from utils.dir import check_dir, unzip, delete_dir
-from utils.img_transformation import check_img, enchance_img, gaussian_blur, apply_mask, roi_obj, analize_img, pseudo_img
+from utils.img_transformation import check_img_ext, enchance_img, gaussian_blur, apply_mask, roi_obj, analize_img, pseudo_img
 from sklearn.model_selection import train_test_split
 import numpy as np
 from utils.model import save_model, load_model
@@ -106,9 +106,7 @@ def	get_names(src_dir):
 				file_name = dir + '/' + file
 				if str.find(file, '.json') != -1:
 					features.append(parse_features(root_dir + file))
-				elif str.find(file, '.JPG') != -1:
 					y_true.append(y_index)
-					images.append(file_name)
 			if len(files) > 0:
 				y_index += 1
 
@@ -161,18 +159,18 @@ def classify_img(X_train, y_train, X_test, y_test, img_path):
 	to_test = extract_features(img)
 	to_test = parse_features(features=to_test)
 
-	pipeline = Pipeline([
+	pipeline = load_model("data/pipeline.pkl")
+	""" pipeline = Pipeline([
 		('scaler', StandardScaler()),
 		('mlp', MLPClassifier(hidden_layer_sizes=[128, 256, 512], max_iter=100, learning_rate_init=0.001, alpha=0.001, random_state=42, learning_rate='adaptive'))
-	])
+	]) """
 	# Using the whole dataset to find the best params
 	# find_best_params(X_train + X_test, y_train + y_test, pipeline)
 
 	# Fit the pipeline to the data
-	pipeline.fit(X_train, y_train)
+	# pipeline.fit(X_train, y_train)
 
-	""" pipeline = load_model("data/pipeline.pkl")
-	save_model("data/pipeline.pkl", pipeline) """
+	# save_model("data/pipeline.pkl", pipeline)
 
 	train_score = pipeline.score(X_train, y_train)
 	test_score = pipeline.score(X_test, y_test)
@@ -190,8 +188,8 @@ def classify_img(X_train, y_train, X_test, y_test, img_path):
 def main():
 	if len(sys.argv) == 2:
 		img_name = sys.argv[1]
-		X_train, X_test, y_train, y_test = get_data(crt_zip=True, del_data=False)
-		result = classify_img(X_train, y_train, X_test, y_test, img_name)
+		X_train, X_test, y_train, y_test = get_data(crt_zip=False, del_data=False)
+		test_score = classify_img(X_train, y_train, X_test, y_test, img_name)
 	else:
 		raise(ValueError("error: you need to provide a singular path as an argument:\n\t\tpython train.py <path_to_folder>"))
 

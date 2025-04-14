@@ -7,7 +7,7 @@ GREEN_RGB = [0, 255, 100]
 LOWER_GREEN_HSV = [25, 20, 20]
 HIGHER_GREEN_HSV = [100, 255, 255]
 
-def	check_img(img):
+def	check_img_ext(img):
 	valid_extensions = ('.JPG', '.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.gif')
 	return img.lower().endswith(valid_extensions)
 

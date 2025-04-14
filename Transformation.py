@@ -4,13 +4,14 @@ import cv2 as cv
 from plantcv import plantcv as pcv
 import matplotlib.pyplot as plt
 import numpy as np
-from utils.data import get_files, check_dir
-from utils.img_transformation import check_img, enchance_img, gaussian_blur, apply_mask, roi_obj, analize_img, pseudo_img
+from utils.data import get_files
+from utils.dir import check_dir
+from utils.img_transformation import check_img_ext, enchance_img, gaussian_blur, apply_mask, roi_obj, analize_img, pseudo_img
 
 MAX_TRANSFORM = 50
 
 def	handle_img(path_img, path_to_save=None, plt=True):
-	if check_img(path_img) is False:
+	if check_img_ext(path_img) is False:
 		print(f"Error: The given argument is not an image: {path_img}")
 		return
 	if str.find(path_img, ').JPG') == -1:

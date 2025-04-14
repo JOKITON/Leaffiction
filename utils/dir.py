@@ -14,12 +14,17 @@ def	unzip(src_path, out_path):
 
 	return zip_ref
 
+def	create_folder(dir, exist_ok=False):
+	os.makedirs(dir, exist_ok=exist_ok)
+
+	return dir
+
 def	create_folders(base_dir, subdirs, exist_ok=False):
-	os.makedirs(base_dir)
+	os.makedirs(base_dir, exist_ok=exist_ok)
 
 	for subdir in subdirs:
 		subdir_path = os.path.join(base_dir, subdir)
-		os.makedirs(subdir_path)
+		os.makedirs(subdir_path, exist_ok=exist_ok)
 
 	return base_dir
 

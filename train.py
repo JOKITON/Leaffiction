@@ -4,7 +4,7 @@ import json
 import cv2 as cv
 from utils.data import get_files, zip_folder, save_json
 from utils.dir import check_dir, delete_dir, create_folders
-from utils.img_transformation import check_img, enchance_img, gaussian_blur, apply_mask, roi_obj, analize_img, pseudo_img
+from utils.img_transformation import check_img_ext, enchance_img, gaussian_blur, apply_mask, roi_obj, analize_img, pseudo_img
 import shutil
 import numpy as np
 from plantcv import plantcv as pcv
@@ -88,7 +88,7 @@ def extract_features(img_name, img, plt_data=False):
 	}
 
 def	augment_img(img_path, dir, img_name):
-	if check_img(img_path) is False:
+	if check_img_ext(img_path) is False:
 		raise(ValueError(f"Error: The given argument is not an image: {img_path}"))
 
 	path_to_save = check_dir(config["train_path"])

@@ -2,6 +2,7 @@
 	"data_path": "data/",
 	"apple_path": "data/Apple/",
 	"grape_path": "data/Grape/",
+	"pipeline_path": "data/pipeline.pkl",
 
 	"aug_apple_rust": 5,
 	"aug_apple_Black_rot": 1,
@@ -15,5 +16,7 @@
 
 	"train_path": "temp/",
 	"zip_src": "data/train",
-	"zip_out": "temp/"
+	"zip_out": "temp/",
+
+	"load_pipeline" : "True"
 }
